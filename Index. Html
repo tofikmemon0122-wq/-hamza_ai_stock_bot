@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hamza Stock Live</title>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 15px;
+      font-family: Arial, sans-serif;
+      background: #0b1220;
+      color: white;
+    }
+
+    h1 {
+      margin: 5px 0;
+      font-size: 23px;
+    }
+
+    .sub {
+      color: #8fa0b8;
+      font-size: 13px;
+      margin-bottom: 15px;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px;
+      border-radius: 10px;
+      border: 1px solid #263650;
+      background: #121c2d;
+      color: white;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .filters {
+      display: flex;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    button {
+      padding: 9px 13px;
+      border-radius: 20px;
+      border: 1px solid #30415d;
+      background: #121c2d;
+      color: white;
+    }
+
+    button.active {
+      background: #24548a;
+    }
+
+    .stock {
+      background: #111b2b;
+      border: 1px solid #24344d;
+      border-radius: 14px;
+      padding: 14px;
+      margin: 10px 0;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .name {
+      font-size: 17px;
+      font-weight: bold;
+    }
+
+    .bullish {
+      color: #35e39a;
+      font-weight: bold;
+    }
+
+    .bearish {
+      color: #ff6878;
+      font-weight: bold;
+    }
+
+    .data {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      font-size: 12px;
+      color: #9eacc0;
+    }
+
+    .data b {
+      color: white;
+    }
+
+    .reason {
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 9px;
+      background: #0c1524;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .loading {
+      text-align: center;
+      color: #91a1b8;
+      margin-top: 25px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>HAMZA STOCK LIVE</h1>
+  <div class="sub">NSE Stocks • EMA 20 • Volume • Bullish / Bearish</div>
+
+  <input
+    id="search"
+    type="text"
+    placeholder="Search NSE stock..."
+  >
+
+  <div class="filters">
+    <button class="active" onclick="filterStocks('ALL', this)">
+      All
+    </button>
+
+    <button onclick="filterStocks('BULLISH', this)">
+      🟢 Bullish
+    </button>
+
+    <button onclick="filterStocks('BEARISH', this)">
+      🔴 Bearish
+    </button>
+  </div>
+
+  <div id="stocks">
+    <div class="loading">
+      Loading stocks...
+    </div>
+  </div>
+
+<script>
+
+const tg = window.Telegram.WebApp;
+
+tg.ready();
+tg.expand();
+
+let currentFilter = "ALL";
+
+const stocks = [
+  {
+    symbol: "RELIANCE",
+    price: "₹1,482.30",
+    ema20: "₹1,465.10",
+    volume: "12.4M",
+    signal: "BULLISH",
+    reason: "Price EMA 20 ke upar hai aur buying momentum strong hai."
+  },
+
+  {
+    symbol: "TATAMOTORS",
+    price: "₹735.20",
+    ema20: "₹720.80",
+    volume: "8.7M",
+    signal: "BULLISH",
+    reason: "Strong buying interest aur price EMA 20 ke upar hold kar raha hai."
+  },
+
+  {
+    symbol: "HDFCBANK",
+    price: "₹1,020.40",
+    ema20: "₹1,028.70",
+    volume: "6.1M",
+    signal: "BEARISH",
+    reason: "Selling pressure hai aur price EMA 20 ke neeche hai."
+  },
+
+  {
+    symbol: "ASIANENE",
+    price: "₹312.60",
+    ema20: "₹301.20",
+    volume: "1.9M",
+    signal: "BULLISH",
+    reason: "Business/contract update ke saath buying activity strong hai."
+  },
+
+  {
+    symbol: "INFY",
+    price: "₹1,558.10",
+    ema20: "₹1,575.40",
+    volume: "3.2M",
+    signal: "BEARISH",
+    reason: "Price EMA 20 ke neeche hai, short-term weakness dikh rahi hai."
+  }
+];
+
+function showStocks() {
+
+  const search =
+    document.getElementById("search")
+    .value
+    .toUpperCase();
+
+  const container =
+    document.getElementById("stocks");
+
+  const filtered = stocks.filter(stock => {
+
+    const matchSearch =
+      stock.symbol.includes(search);
+
+    const matchFilter =
+      currentFilter === "ALL" ||
+      stock.signal === currentFilter;
+
+    return matchSearch && matchFilter;
+  });
+
+  if (filtered.length === 0) {
+
+    container.innerHTML =
+      '<div class="loading">Stock nahi mila.</div>';
+
+    return;
+  }
+
+  container.innerHTML = filtered.map(stock => {
+
+    const signalClass =
+      stock.signal === "BULLISH"
+      ? "bullish"
+      : "bearish";
+
+    const icon =
+      stock.signal === "BULLISH"
+      ? "🟢"
+      : "🔴";
+
+    return `
+
+      <div class="stock">
+
+        <div class="top">
+
+          <div class="name">
+            ${stock.symbol}
+          </div>
+
+          <div class="${signalClass}">
+            ${icon} ${stock.signal}
+          </div>
+
+        </div>
+
+        <div class="data">
+
+          <span>
+            Price:
+            <b>${stock.price}</b>
+          </span>
+
+          <span>
+            EMA20:
+            <b>${stock.ema20}</b>
+          </span>
+
+          <span>
+            Volume:
+            <b>${stock.volume}</b>
+          </span>
+
+        </div>
+
+        <div class="reason">
+
+          📰 <b>Kyun chal raha hai:</b><br>
+
+          ${stock.reason}
+
+        </div>
+
+      </div>
+
+    `;
+
+  }).join("");
+}
+
+function filterStocks(filter, button) {
+
+  currentFilter = filter;
+
+  document
+    .querySelectorAll(".filters button")
+    .forEach(btn => btn.classList.remove("active"));
+
+  button.classList.add("active");
+
+  showStocks();
+}
+
+document
+  .getElementById("search")
+  .addEventListener("input", showStocks);
+
+showStocks();
+
+</script>
+
+</body>
+</html>
